@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/libloading
+libloading.so
+libloading.dylib
+libloading.dll
+libloading.a
+libloading.lib
+libloading-test-*
+*.exe
+*.o
+*.obj
+*.lst
+*.a

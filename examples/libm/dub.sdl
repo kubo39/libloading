@@ -1,0 +1,5 @@
+name "libm_example"
+authors "Hiroki Noda"
+copyright "Copyright © 2020, Hiroki Noda"
+license "BSL-1.0"
+dependency "libloading" path="../../"

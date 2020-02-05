@@ -1,0 +1,144 @@
+module libloading;
+
+version(Posix) {}
+else static assert(false, "Unsupported platform.");
+
+private import core.sys.posix.dlfcn;
+private import std.traits : isFunctionPointer;
+
+version (LDC)
+{
+    import core.sys.posix.pthread;
+    import core.sys.posix.stdlib : abort;
+    import ldc.attributes;
+    extern (C)
+    {
+        __gshared @weak pthread_mutex_t libloading_dlerror_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+        @weak void libloading_dlerror_mutex_lock() @nogc nothrow
+        {
+            if (pthread_mutex_lock(&libloading_dlerror_mutex) != 0)
+                abort();
+        }
+
+        @weak void libloading_dlerror_mutex_unlock() @nogc nothrow
+        {
+            if (pthread_mutex_unlock(&libloading_dlerror_mutex) != 0)
+                abort();
+        }
+    }
+}
+else
+{
+    extern (C)
+    {
+        void libloading_dlerror_mutex_lock() @nogc nothrow;
+        void libloading_dlerror_mutex_unlock() @nogc nothrow;
+    }
+}
+
+/** Whole error handling scheme in libdl is done via setting and querying some
+ * global state.
+ */
+private bool withDlerror(bool delegate() @nogc nothrow del, string* message)
+    /+ @nogc +/ nothrow
+{
+    import core.stdc.string : strlen;
+
+    libloading_dlerror_mutex_lock();
+    scope (exit) libloading_dlerror_mutex_unlock();
+    bool result = del();
+    if (!result)
+    {
+        auto error = dlerror();
+        if (error is null)
+            return false;
+        // copy the error string above, when we call dlerror again to let libdl
+        // know it may free its copy of the string.
+        *message = error[0 .. strlen(error)].idup;
+    }
+    return result;
+}
+
+/// Library.
+struct Library
+{
+    void* handle;
+}
+
+/// Find and a load library.
+Library loadLibrary(const(char)* filename = null, int flags = RTLD_NOW)
+{
+    Library library;
+    string errorMessage;
+    bool result = withDlerror(delegate() @nogc nothrow {
+            auto result = dlopen(filename, flags);
+            if (result is null)
+                return false;
+            library.handle = result;
+            return true;
+        }, &errorMessage);
+
+    if (!result)
+    {
+        if (errorMessage is null)
+            throw new Exception("Unknwon reason");
+        throw new Exception(errorMessage);
+    }
+    return library;
+}
+
+/// Ditto.
+Library loadLibrary(string filename, int flags = RTLD_NOW)
+{
+    import std.string : toStringz;
+    return loadLibrary(filename.toStringz, flags);
+}
+
+/// Dispose a loaded library.
+void dispose(Library library) nothrow
+{
+    string errorMessage;
+    withDlerror(delegate() @nogc nothrow {
+            return dlclose(library.handle) == 0;
+        }, &errorMessage);
+}
+
+/// Symbol from a library.
+struct Symbol(T)
+{
+    T pointer;
+    alias pointer this;
+}
+
+/// Get a pointer to function by symbol name.
+Symbol!T getSymbol(T)(Library library, const(char)* symbolName)
+    if (isFunctionPointer!T)
+{
+    Symbol!T symbol;
+    string errorMessage;
+    bool result = withDlerror(delegate() @nogc nothrow {
+            // clear any existing error, please see `man dlerror`.
+            dlerror();
+            auto p = dlsym(library.handle, symbolName);
+            if (p is null)
+                return false;
+            symbol.pointer = cast(T) p;
+            return true;
+        }, &errorMessage);
+    if (!result)
+    {
+        if (errorMessage is null)
+            throw new Exception("Unknwon reason");
+        throw new Exception(errorMessage);
+    }
+    return symbol;
+}
+
+/// Ditto.
+Symbol!T getSymbol(T)(Library library, string symbolName)
+    if (isFunctionPointer!T)
+{
+    import std.string : toStringz;
+    return getSymbol!T(library, symbolName.toStringz);
+}
