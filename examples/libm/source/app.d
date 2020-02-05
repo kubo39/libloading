@@ -18,4 +18,6 @@ void main()
         import std.stdio;
         writeln(ceil);
     }
+
+    lib.dispose();
 }
