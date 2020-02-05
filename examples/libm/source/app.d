@@ -5,7 +5,7 @@ else version (OSX) enum libm = "libm.dylib";
 else version (Posix) enum libm = "libm.so";
 else static assert(false);
 
-alias ceilFunc = double function(double);
+alias ceilFunc = double function(double) @nogc nothrow;
 
 void main()
 {
