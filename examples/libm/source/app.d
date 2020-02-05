@@ -1,6 +1,6 @@
 import libloading;
 
-version (linux) enum libm = "libm-2.27.so";
+version (linux) enum libm = "libm.so.6";
 else version (OSX) enum libm = "libm.dylib";
 else version (Posix) enum libm = "libm.so";
 else static assert(false);
