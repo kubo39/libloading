@@ -3,8 +3,10 @@ module libloading;
 version(Posix) {}
 else static assert(false, "Unsupported platform.");
 
-private import core.sys.posix.dlfcn;
-private import std.traits : isFunctionPointer;
+private:
+
+import core.sys.posix.dlfcn;
+import std.traits : isFunctionPointer;
 
 version (LDC)
 {
@@ -40,7 +42,7 @@ else
 /** Whole error handling scheme in libdl is done via setting and querying some
  * global state.
  */
-private bool withDlerror(bool delegate() @nogc nothrow del, string* message)
+bool withDlerror(bool delegate() @nogc nothrow del, string* message)
     /+ @nogc +/ nothrow
 {
     import core.stdc.string : strlen;
@@ -60,10 +62,13 @@ private bool withDlerror(bool delegate() @nogc nothrow del, string* message)
     return result;
 }
 
+public:
+
 /// Library.
 struct Library
 {
     void* handle;
+    alias handle this;
 }
 
 /// Find and a load library.
@@ -100,7 +105,7 @@ void dispose(Library library) nothrow
 {
     string errorMessage;
     withDlerror(delegate() @nogc nothrow {
-            return dlclose(library.handle) == 0;
+            return dlclose(library) == 0;
         }, &errorMessage);
 }
 
@@ -120,7 +125,7 @@ Symbol!T getSymbol(T)(Library library, const(char)* symbolName)
     bool result = withDlerror(delegate() @nogc nothrow {
             // clear any existing error, please see `man dlerror`.
             dlerror();
-            auto p = dlsym(library.handle, symbolName);
+            auto p = dlsym(library, symbolName);
             if (p is null)
                 return false;
             symbol.pointer = cast(T) p;
