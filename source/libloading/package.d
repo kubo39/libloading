@@ -101,7 +101,7 @@ Library loadLibrary(string filename, int flags = RTLD_NOW)
 }
 
 /// Dispose a loaded library.
-void dispose(Library library) nothrow
+void dispose(ref Library library) nothrow
 {
     string errorMessage;
     withDlerror(delegate() @nogc nothrow {
@@ -137,7 +137,7 @@ struct Symbol(T)
 }
 
 /// Get a pointer to function by symbol name.
-Symbol!T getSymbol(T)(Library library, const(char)* symbolName)
+Symbol!T getSymbol(T)(ref Library library, const(char)* symbolName)
     if (isFunctionPointer!T)
 {
     Symbol!T symbol;
@@ -161,7 +161,7 @@ Symbol!T getSymbol(T)(Library library, const(char)* symbolName)
 }
 
 /// Ditto.
-Symbol!T getSymbol(T)(Library library, string symbolName)
+Symbol!T getSymbol(T)(ref Library library, string symbolName)
     if (isFunctionPointer!T)
 {
     import std.string : toStringz;
