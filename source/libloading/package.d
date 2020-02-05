@@ -143,7 +143,7 @@ Symbol!T getSymbol(T)(ref Library library, const(char)* symbolName)
     Symbol!T symbol;
     string errorMessage;
     bool result = withDlerror(delegate() @nogc nothrow {
-            // clear any existing error, please see `man dlerror`.
+            // clear any existing error, please see `man dlsym`.
             dlerror();
             const p = dlsym(cast(void*)library, symbolName);
             if (p is null)
