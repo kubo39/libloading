@@ -67,7 +67,7 @@ public:
 /// Library.
 struct Library
 {
-    void* handle;
+    const(void)* handle;
     alias handle this;
 }
 
@@ -77,10 +77,10 @@ Library loadLibrary(const(char)* filename = null, int flags = RTLD_NOW)
     Library library;
     string errorMessage;
     bool result = withDlerror(delegate() @nogc nothrow {
-            auto result = dlopen(filename, flags);
+            const result = dlopen(filename, flags);
             if (result is null)
                 return false;
-            library.handle = result;
+            library = result;
             return true;
         }, &errorMessage);
 
@@ -105,7 +105,7 @@ void dispose(Library library) nothrow
 {
     string errorMessage;
     withDlerror(delegate() @nogc nothrow {
-            return dlclose(library) == 0;
+            return dlclose(cast(void*) library) == 0;
         }, &errorMessage);
 }
 
@@ -145,10 +145,10 @@ Symbol!T getSymbol(T)(Library library, const(char)* symbolName)
     bool result = withDlerror(delegate() @nogc nothrow {
             // clear any existing error, please see `man dlerror`.
             dlerror();
-            auto p = dlsym(library, symbolName);
+            const p = dlsym(cast(void*)library, symbolName);
             if (p is null)
                 return false;
-            symbol.pointer = cast(T) p;
+            symbol = cast(T) p;
             return true;
         }, &errorMessage);
     if (!result)
