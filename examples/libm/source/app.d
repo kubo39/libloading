@@ -12,4 +12,10 @@ void main()
     auto lib = loadLibrary(libm);
     auto ceil = lib.getSymbol!(ceilFunc)("ceil");
     assert(ceil(0.45) == 1);
+
+    version (CRuntime_Glibc)
+    {
+        import std.stdio;
+        writeln(ceil);
+    }
 }

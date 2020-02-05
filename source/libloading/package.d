@@ -114,6 +114,26 @@ struct Symbol(T)
 {
     T pointer;
     alias pointer this;
+
+    version(linux)
+    string toString()
+    {
+        import core.sys.linux.dlfcn;
+        import std.format : format;
+        import std.string : fromStringz;
+
+        Dl_info info = void;
+        if (dladdr(this.pointer, &info) != 0)
+        {
+            if (info.dli_sname is null)
+                return format!"Unknown symbol from %s"(info.dli_fname.fromStringz);
+            else
+                return format!"Symbol %s from %s"(
+                    info.dli_sname.fromStringz,
+                    info.dli_fname.fromStringz);
+        }
+        else return "Unknown symbol";
+    }
 }
 
 /// Get a pointer to function by symbol name.
