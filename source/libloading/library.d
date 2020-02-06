@@ -12,6 +12,7 @@ else version (Posix)
 }
 else static assert(false, "Unsupported platform.");
 
+import std.exception : enforce;
 import std.traits : isFunctionPointer;
 
 version (Posix)
@@ -104,8 +105,8 @@ Library loadLibrary(const(char)* filename = null, int flags = RTLD_NOW)
         if (!result)
         {
             if (errorMessage is null)
-                throw new Exception("Unknwon reason");
-            throw new Exception(errorMessage);
+                enforce(false, "Unknwon reason");
+            enforce(false, errorMessage);
         }
     }
 
@@ -171,9 +172,11 @@ Symbol!T getSymbol(T)(ref Library library, const(char)* symbolName)
     version (Windows)
     {
         import core.sys.windows.windows : GetProcAddress;
+        import std.format : format;
+
         const p = GetProcAddress(library, symbolName);
         if (p is null)
-            throw new Exception("Could not load function");
+            enforce(false, format!"Could not load function function '%s'"(symbolName));
         symbol = cast(T) p;
     }
     else version (Posix)
@@ -192,8 +195,8 @@ Symbol!T getSymbol(T)(ref Library library, const(char)* symbolName)
         if (!result)
         {
             if (errorMessage is null)
-                throw new Exception("Unknwon reason");
-            throw new Exception(errorMessage);
+                enforce(false, "Unknwon reason");
+            enforce(false, errorMessage);
         }
     }
 
