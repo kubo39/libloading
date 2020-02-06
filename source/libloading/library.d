@@ -12,7 +12,7 @@ else version (Posix)
 }
 else static assert(false, "Unsupported platform.");
 
-import std.exception : enforce;
+import std.exception : enforce, errnoEnforce;
 import std.traits : isFunctionPointer;
 
 version (Posix)
@@ -106,7 +106,7 @@ Library loadLibrary(const(char)* filename = null, int flags = RTLD_NOW)
         {
             if (errorMessage is null)
                 enforce(false, "Unknwon reason");
-            enforce(false, errorMessage);
+            errnoEnforce(false, errorMessage);
         }
     }
 
@@ -196,7 +196,7 @@ Symbol!FunctionType getSymbol(FunctionType)(ref Library library, const(char)* sy
         {
             if (errorMessage is null)
                 enforce(false, "Unknwon reason");
-            enforce(false, errorMessage);
+            errnoEnforce(false, errorMessage);
         }
     }
 
