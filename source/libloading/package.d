@@ -1,47 +1,57 @@
 module libloading;
 
-version(Posix) {}
-else static assert(false, "Unsupported platform.");
-
 private:
 
-import core.sys.posix.dlfcn;
+version (Windows)
+{
+    import core.runtime;
+}
+else version (Posix)
+{
+    import core.sys.posix.dlfcn;
+}
+else static assert(false, "Unsupported platform.");
+
 import std.traits : isFunctionPointer;
 
-version (LDC)
+version (Posix)
 {
-    import core.sys.posix.pthread;
-    import core.sys.posix.stdlib : abort;
-    import ldc.attributes;
-    extern (C)
+    version (LDC)
     {
-        __gshared @weak pthread_mutex_t libloading_dlerror_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-        @weak void libloading_dlerror_mutex_lock() @nogc nothrow
+        import core.sys.posix.pthread;
+        import core.sys.posix.stdlib : abort;
+        import ldc.attributes;
+        extern (C)
         {
-            if (pthread_mutex_lock(&libloading_dlerror_mutex) != 0)
-                abort();
-        }
+            __gshared @weak pthread_mutex_t libloading_dlerror_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-        @weak void libloading_dlerror_mutex_unlock() @nogc nothrow
-        {
-            if (pthread_mutex_unlock(&libloading_dlerror_mutex) != 0)
-                abort();
+            @weak void libloading_dlerror_mutex_lock() @nogc nothrow
+            {
+                if (pthread_mutex_lock(&libloading_dlerror_mutex) != 0)
+                    abort();
+            }
+
+            @weak void libloading_dlerror_mutex_unlock() @nogc nothrow
+            {
+                if (pthread_mutex_unlock(&libloading_dlerror_mutex) != 0)
+                    abort();
+            }
         }
     }
-}
-else
-{
-    extern (C)
+    else
     {
-        void libloading_dlerror_mutex_lock() @nogc nothrow;
-        void libloading_dlerror_mutex_unlock() @nogc nothrow;
+        extern (C)
+        {
+            void libloading_dlerror_mutex_lock() @nogc nothrow;
+            void libloading_dlerror_mutex_unlock() @nogc nothrow;
+        }
     }
 }
 
 /** Whole error handling scheme in libdl is done via setting and querying some
  * global state.
  */
+version(Posix)
 bool withDlerror(bool delegate() @nogc nothrow del, string* message)
     /+ @nogc +/ nothrow
 {
@@ -75,21 +85,30 @@ struct Library
 Library loadLibrary(const(char)* filename = null, int flags = RTLD_NOW)
 {
     Library library;
-    string errorMessage;
-    bool result = withDlerror(delegate() @nogc nothrow {
-            const result = dlopen(filename, flags);
-            if (result is null)
-                return false;
-            library = result;
-            return true;
-        }, &errorMessage);
 
-    if (!result)
+    version (Windows)
     {
-        if (errorMessage is null)
-            throw new Exception("Unknwon reason");
-        throw new Exception(errorMessage);
+        library = Runtime.loadLibrary(filename);
     }
+    else version (Posix)
+    {
+        string errorMessage;
+        bool result = withDlerror(delegate() @nogc nothrow {
+                const result = dlopen(filename, flags);
+                if (result is null)
+                    return false;
+                library = result;
+                return true;
+            }, &errorMessage);
+
+        if (!result)
+        {
+            if (errorMessage is null)
+                throw new Exception("Unknwon reason");
+            throw new Exception(errorMessage);
+        }
+    }
+
     return library;
 }
 
@@ -103,10 +122,17 @@ Library loadLibrary(string filename, int flags = RTLD_NOW)
 /// Dispose a loaded library.
 void dispose(ref Library library) nothrow
 {
-    string errorMessage;
-    withDlerror(delegate() @nogc nothrow {
-            return dlclose(cast(void*) library) == 0;
-        }, &errorMessage);
+    version (Windows)
+    {
+        Runtime.unloadLibrary(library);
+    }
+    version (Posix)
+    {
+        string errorMessage;
+        withDlerror(delegate() @nogc nothrow {
+                return dlclose(cast(void*) library) == 0;
+            }, &errorMessage);
+    }
 }
 
 /// Symbol from a library.
@@ -141,22 +167,36 @@ Symbol!T getSymbol(T)(ref Library library, const(char)* symbolName)
     if (isFunctionPointer!T)
 {
     Symbol!T symbol;
-    string errorMessage;
-    bool result = withDlerror(delegate() @nogc nothrow {
-            // clear any existing error, please see `man dlsym`.
-            dlerror();
-            const p = dlsym(cast(void*)library, symbolName);
-            if (p is null)
-                return false;
-            symbol = cast(T) p;
-            return true;
-        }, &errorMessage);
-    if (!result)
+
+    version (Windows)
     {
-        if (errorMessage is null)
-            throw new Exception("Unknwon reason");
-        throw new Exception(errorMessage);
+        import core.sys.windows.windows : GetProcAddress;
+        const p = GetProcAddress(library, symbolName);
+        if (p is null)
+            throw new Exception("Could not load function");
+        symbol = cast(T) p;
     }
+    else version (Posix)
+    {
+        string errorMessage;
+        bool result = withDlerror(delegate() @nogc nothrow {
+                // clear any existing error, please see `man dlsym`.
+                dlerror();
+                const p = dlsym(cast(void*)library, symbolName);
+                if (p is null)
+                    return false;
+                symbol = cast(T) p;
+                return true;
+            }, &errorMessage);
+
+        if (!result)
+        {
+            if (errorMessage is null)
+                throw new Exception("Unknwon reason");
+            throw new Exception(errorMessage);
+        }
+    }
+
     return symbol;
 }
 
