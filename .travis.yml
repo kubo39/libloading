@@ -1,0 +1,12 @@
+language: d
+
+d:
+  - dmd
+  - ldc
+
+script:
+  - dub test --compiler=${DC}
+
+notifications:
+  email:
+    on_success: never
