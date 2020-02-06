@@ -5,5 +5,7 @@ copyright "Copyright © 2020, Hiroki Noda"
 license "BSL-1.0"
 targetName "loading"
 targetType "staticLibrary"
-preBuildCommands "cc -O0 -ffunction-sections -fdata-sections -g -fPIC -Wall -Wextra -o source/c/global_static.o -c source/c/global_static.c" "ar crs libglobal_static.a source/c/global_static.o" platform="dmd"
-lflags "-lglobal_static" platform="dmd"
+configuration "vendored" {
+    preBuildCommands "cc -O0 -ffunction-sections -fdata-sections -g -fPIC -Wall -Wextra -o source/c/global_static.o -c source/c/global_static.c" "ar crs libglobal_static.a source/c/global_static.o" platform="dmd"
+    sourceFiles "source/c/global_static.o" platform="dmd"
+}
