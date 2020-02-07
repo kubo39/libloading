@@ -13,7 +13,7 @@ else version (Posix)
 else static assert(false, "Unsupported platform.");
 
 import std.exception : enforce, errnoEnforce;
-import std.traits : isFunctionPointer;
+import std.traits : isFunctionPointer, isPointer;
 
 version (Posix)
 {
@@ -137,9 +137,9 @@ void dispose(ref Library library) nothrow
 }
 
 /// Symbol from a library.
-struct Symbol(FunctionType)
+struct Symbol(T)
 {
-    FunctionType pointer;
+    T pointer;
     alias pointer this;
 
     version(linux)
@@ -164,10 +164,10 @@ struct Symbol(FunctionType)
 }
 
 /// Get a pointer to function by symbol name.
-Symbol!FunctionType getSymbol(FunctionType)(ref Library library, const(char)* symbolName)
-    if (isFunctionPointer!FunctionType)
+Symbol!T getSymbol(T)(ref Library library, const(char)* symbolName)
+    if (isFunctionPointer!T || isPointer!T)
 {
-    Symbol!FunctionType symbol;
+    Symbol!T symbol;
 
     version (Windows)
     {
@@ -177,7 +177,7 @@ Symbol!FunctionType getSymbol(FunctionType)(ref Library library, const(char)* sy
         const p = GetProcAddress(library, symbolName);
         if (p is null)
             enforce(false, format!"Could not load function function '%s'"(symbolName));
-        symbol = cast(FunctionType) p;
+        symbol = cast(T) p;
     }
     else version (Posix)
     {
@@ -188,7 +188,7 @@ Symbol!FunctionType getSymbol(FunctionType)(ref Library library, const(char)* sy
                 const p = dlsym(cast(void*)library, symbolName);
                 if (p is null)
                     return false;
-                symbol = cast(FunctionType) p;
+                symbol = cast(T) p;
                 return true;
             }, &errorMessage);
 
@@ -204,9 +204,9 @@ Symbol!FunctionType getSymbol(FunctionType)(ref Library library, const(char)* sy
 }
 
 /// Ditto.
-Symbol!FunctionType getSymbol(FunctionType)(ref Library library, string symbolName)
-    if (isFunctionPointer!FunctionType)
+Symbol!T getSymbol(T)(ref Library library, string symbolName)
+    if (isFunctionPointer!T || isPointer!T)
 {
     import std.string : toStringz;
-    return getSymbol!FunctionType(library, symbolName.toStringz);
+    return getSymbol!T(library, symbolName.toStringz);
 }

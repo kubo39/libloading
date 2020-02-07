@@ -17,6 +17,15 @@ unittest
     assert(42 == f(42));
 }
 
+unittest
+{
+    auto lib = loadLibrary(LIBRARY_NAME);
+    auto var = lib.getSymbol!(uint*)("TEST_STATIC_UINT");
+    *var = 42;
+    auto var2 = lib.getSymbol!(uint*)("TEST_STATIC_UINT");
+    assert(*var2 == 42);
+}
+
 version(unittest)
 shared static this()
 {
