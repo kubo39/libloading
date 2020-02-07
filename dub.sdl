@@ -5,6 +5,7 @@ copyright "Copyright © 2020, Hiroki Noda"
 license "BSL-1.0"
 targetName "loading"
 targetType "staticLibrary"
+excludedSourceFile "source/libloading/test_helper.d"
 configuration "vendored" {
     preBuildCommands "cc -O0 -ffunction-sections -fdata-sections -g -fPIC -Wall -Wextra -o source/c/global_static.o -c source/c/global_static.c" platform="dmd" platform="posix"
     sourceFiles "source/c/global_static.o" platform="dmd" platform="posix"
