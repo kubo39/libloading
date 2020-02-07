@@ -49,13 +49,17 @@ version (Posix)
     }
 }
 
-/** Whole error handling scheme in libdl is done via setting and querying some
+/**
+ * Whole error handling scheme in libdl is done via setting and querying some
  * global state.
  */
 version(Posix)
 bool withDlerror(bool delegate() @nogc nothrow del, string* message)
     /+ @nogc +/ nothrow
 {
+    /**
+     * We will guard all uses of libdl library with our own mutex for thread-safe.
+     */
     import core.stdc.string : strlen;
 
     libloading_dlerror_mutex_lock();
@@ -82,7 +86,7 @@ struct Library
     alias handle this;
 }
 
-/// Find and a load library.
+/// Find and load a library.
 Library loadLibrary(const(char)* filename = null, int flags = RTLD_NOW)
 {
     Library library;
