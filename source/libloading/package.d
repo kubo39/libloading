@@ -26,6 +26,12 @@ unittest
     assert(*var2 == 42);
 }
 
+unittest
+{
+    import std.exception : assertThrown;
+    assertThrown(loadLibrary("no exist"));
+}
+
 version(unittest)
 shared static this()
 {
