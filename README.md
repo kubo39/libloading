@@ -16,5 +16,5 @@ auto lib = loadLibrary(DYNAMIC_LIBRARY_NAME);
 auto ceil = lib.getSymbol!(ceilFunc)("ceil");
 assert(ceil(0.45) == 1);
 
-lib.dispose();
+lib.unload();
 ```

@@ -125,7 +125,7 @@ Library loadLibrary(string filename, int flags = RTLD_NOW)
 }
 
 /// Dispose a loaded library.
-void dispose(ref Library library) nothrow
+void unload(ref Library library) nothrow
 {
     version (Windows)
     {

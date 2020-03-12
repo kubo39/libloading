@@ -19,5 +19,5 @@ void main()
         writeln(ceil);
     }
 
-    lib.dispose();
+    lib.unload();
 }
