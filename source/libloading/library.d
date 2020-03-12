@@ -64,7 +64,7 @@ bool withDlerror(bool delegate() @nogc nothrow del, string* message)
 
     libloading_dlerror_mutex_lock();
     scope (exit) libloading_dlerror_mutex_unlock();
-    bool result = del();
+    immutable result = del();
     if (!result)
     {
         auto error = dlerror();
@@ -149,7 +149,7 @@ struct Symbol(T)
     version(linux)
     string toString()
     {
-        import core.sys.linux.dlfcn;
+        import core.sys.linux.dlfcn : Dl_info, dladdr;
         import std.format : format;
         import std.string : fromStringz;
 
