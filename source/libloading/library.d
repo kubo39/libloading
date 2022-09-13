@@ -15,40 +15,6 @@ else static assert(false, "Unsupported platform.");
 import std.exception : enforce, errnoEnforce;
 import std.traits : isFunctionPointer, isPointer;
 
-version (Posix)
-{
-    version (LDC)
-    {
-        import core.sys.posix.pthread;
-        import core.sys.posix.stdlib : abort;
-        import ldc.attributes;
-        extern (C)
-        {
-            __gshared @weak pthread_mutex_t libloading_dlerror_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-            @weak void libloading_dlerror_mutex_lock() @nogc nothrow
-            {
-                if (pthread_mutex_lock(&libloading_dlerror_mutex) != 0)
-                    abort();
-            }
-
-            @weak void libloading_dlerror_mutex_unlock() @nogc nothrow
-            {
-                if (pthread_mutex_unlock(&libloading_dlerror_mutex) != 0)
-                    abort();
-            }
-        }
-    }
-    else
-    {
-        extern (C)
-        {
-            void libloading_dlerror_mutex_lock() @nogc nothrow;
-            void libloading_dlerror_mutex_unlock() @nogc nothrow;
-        }
-    }
-}
-
 /**
  * Whole error handling scheme in libdl is done via setting and querying some
  * global state.
@@ -58,12 +24,10 @@ bool withDlerror(bool delegate() @nogc nothrow del, string* message)
     /+ @nogc +/ nothrow
 {
     /**
-     * We will guard all uses of libdl library with our own mutex for thread-safe.
+     * NOTE: there are some platforms that is still MT-unsafe, like FreeBSD/NetBSD/DragonflyBSD.
      */
     import core.stdc.string : strlen;
 
-    libloading_dlerror_mutex_lock();
-    scope (exit) libloading_dlerror_mutex_unlock();
     immutable result = del();
     if (!result)
     {
