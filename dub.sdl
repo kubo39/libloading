@@ -7,7 +7,9 @@ targetName "loading"
 targetType "staticLibrary"
 excludedSourceFile "source/libloading/test_helper.d"
 configuration "vendored" {
-    preBuildCommands "cc -O0 -ffunction-sections -fdata-sections -g -fPIC -Wall -Wextra -o source/c/global_static.o -c source/c/global_static.c" platform="dmd" platform="posix"
-    sourceFiles "source/c/global_static.o" platform="dmd" platform="posix"
+    preBuildCommands "cc -O0 -ffunction-sections -fdata-sections -g -fPIC -Wall -Wextra -o source/c/global_static.o -c source/c/global_static.c" platform="posix-gdc"
+    preBuildCommands "cc -O0 -ffunction-sections -fdata-sections -g -fPIC -Wall -Wextra -o source/c/global_static.o -c source/c/global_static.c" platform="posix-gdc"
+    sourceFiles "source/c/global_static.o" platform="posix-dmd"
+    sourceFiles "source/c/global_static.o" platform="posix-gdc"
 }
 dflags "-dip1000"
